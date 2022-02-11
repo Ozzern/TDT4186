@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include "alarm_clock.h"
 
+struct AlarmStruct{
+    time_t epoch_time;
+    pid_t childPID;
+};
+
 void empty_stdin() {
     int c;
     while ((c = getchar()) != '\n' && c != EOF) { }
@@ -41,14 +46,12 @@ time_t schedule(struct AlarmStruct *p) {
 }
 
 // Function to display a list
-void list(struct AlarmStruct[]*p) {
+void list(struct AlarmStruct ** p, int n) {
     char buff[19];
     for(int i=0; i < n; i++){
-        /*
-        if(alarms[i]->rawtime > 0){
-            strftime(buff, 19, "%Y-%m-%d %H:%M:%S", localtime(&alarms[i].rawtime));
+        if(p[i]->epoch_time > 0){
+            strftime(buff, 19, "%Y-%m-%d %H:%M:%S", localtime(&p[i]->epoch_time));
             printf("Alarm %d: %s\n", (i+1), buff);
-        */
         }
     }
 }
@@ -73,15 +76,12 @@ time_t get_current_time() {
     return current_time;
 }
 
-struct AlarmStruct{
-    time_t epoch_time;
-    pid_t childPID;
-};
-
 void alarm_system() {
     struct AlarmStruct * alarms[5];
     for(int i=0; i < 5; i++){
         alarms[i] = malloc(sizeof(struct AlarmStruct));
+        alarms[i]->epoch_time = 0;
+        alarms[i]->childPID = 0;
     }
     struct AlarmStruct *(*p)[] = &alarms;
     int alarm_index = 0;
@@ -104,7 +104,7 @@ void alarm_system() {
             alarm_index = alarm_index + 1;
             break;
         case 'l':
-            list((*p));
+            list((*p), 5);
             break;
         case 'c':
             cancel();
