@@ -15,3 +15,5 @@ void empty_stdin();
 struct AlarmStruct;
 
 void alarm_system();
+
+const int MAX_ALARMS;
