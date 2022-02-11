@@ -10,4 +10,8 @@ void list();
 void cancel();
 void exit_program();
 
+void empty_stdin();
+
+struct AlarmStruct;
+
 void alarm_system();

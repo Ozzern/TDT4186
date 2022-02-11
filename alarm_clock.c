@@ -5,10 +5,8 @@
 #include "alarm_clock.h"
 
 void empty_stdin() {
-    char c = getchar();
-    while (c != '\n' && c != 'EOF') {
-        c = getchar();
-    }
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) { }
 }
 
 // Prompts the user for a choice and returns it
@@ -24,16 +22,17 @@ char get_choice() {
 }
 
 // Function to view schedule
-time_t schedule() {
+time_t schedule(struct AlarmStruct[] *p) {
     printf("When would you like to schedule an alarm (yyyy-mm-dd hh:mm:ss)? ");
-    char * line;
+    char line[19];
     struct tm timeinfo;
     time_t rawtime;
-    line = malloc(sizeof(char)*256);
-    if (fgets(line, sizeof(line), stdin)) {
-        strptime("2022-02-10 23:23:23", "%Y-%m-%d %H:%M:%S", &timeinfo);
-        rawtime = mktime(&timeinfo);
+    for(int i=0; i < 19; i++){
+        line[i] = getchar();
     }
+    empty_stdin();
+    strptime(line, "%Y-%m-%d %H:%M:%S", &timeinfo);
+    rawtime = mktime(&timeinfo);
     time_t current_time = get_current_time();
     double time_diff = difftime(rawtime, current_time);
     printf("Scheduling alarm in %i seconds\n", (int) time_diff);
@@ -41,8 +40,14 @@ time_t schedule() {
 }
 
 // Function to display a list
-void list() {
-    printf("List\n");
+void list(struct Alarms, int n) {
+    char buff[19];
+    for(int i=0; i < n; i++){
+        if(alarms[i]->rawtime > 0){
+            strftime(buff, 19, "%Y-%m-%d %H:%M:%S", localtime(&alarms[i].rawtime));
+            printf("Alarm %d: %s\n", (i+1), buff);
+        }
+    }
 }
 
 // Function to cancel to choice
@@ -65,8 +70,17 @@ time_t get_current_time() {
     return current_time;
 }
 
+struct AlarmStruct{
+    time_t rawtime;
+    pid_t childPID;
+};
+
 void alarm_system() {
-    time_t alarms[5];
+    struct AlarmStruct * alarms[5];
+    for(int i=0; i < 5; i++){
+        alarms[i] = malloc(sizeof(struct AlarmStruct));
+    }
+    struct AlarmStruct *(*p)[] = &alarms;
     int alarm_index = 0;
 
     time_t current_time;
@@ -83,11 +97,11 @@ void alarm_system() {
         switch (choice)
         {
         case 's':
-            alarms[alarm_index] = schedule();
+            schedule(alarms[alarm_index]);
             alarm_index = alarm_index + 1;
             break;
         case 'l':
-            list();
+            list(alarms, 5);
             break;
         case 'c':
             cancel();
