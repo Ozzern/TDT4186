@@ -21,8 +21,8 @@ char get_choice() {
     return first_letter;
 }
 
-// Function to view schedule
-time_t schedule(struct AlarmStruct[] *p) {
+// Function to schedule an alarm
+time_t schedule(struct AlarmStruct *p) {
     printf("When would you like to schedule an alarm (yyyy-mm-dd hh:mm:ss)? ");
     char line[19];
     struct tm timeinfo;
@@ -36,16 +36,19 @@ time_t schedule(struct AlarmStruct[] *p) {
     time_t current_time = get_current_time();
     double time_diff = difftime(rawtime, current_time);
     printf("Scheduling alarm in %i seconds\n", (int) time_diff);
-    return rawtime;
+    p->epoch_time = rawtime;
+    p->childPID = 1;
 }
 
 // Function to display a list
-void list(struct Alarms, int n) {
+void list(struct AlarmStruct[]*p) {
     char buff[19];
     for(int i=0; i < n; i++){
+        /*
         if(alarms[i]->rawtime > 0){
             strftime(buff, 19, "%Y-%m-%d %H:%M:%S", localtime(&alarms[i].rawtime));
             printf("Alarm %d: %s\n", (i+1), buff);
+        */
         }
     }
 }
@@ -71,7 +74,7 @@ time_t get_current_time() {
 }
 
 struct AlarmStruct{
-    time_t rawtime;
+    time_t epoch_time;
     pid_t childPID;
 };
 
@@ -97,11 +100,11 @@ void alarm_system() {
         switch (choice)
         {
         case 's':
-            schedule(alarms[alarm_index]);
+            schedule((*p)[alarm_index]);
             alarm_index = alarm_index + 1;
             break;
         case 'l':
-            list(alarms, 5);
+            list((*p));
             break;
         case 'c':
             cancel();
