@@ -47,10 +47,10 @@ time_t schedule(struct AlarmStruct *p) {
 
 // Function to display a list
 void list(struct AlarmStruct ** p, int n) {
-    char buff[19];
-    for(int i=0; i < n; i++){
+    char buff[256];
+    for(int i=0; i < n; i++) {
         if(p[i]->epoch_time > 0){
-            strftime(buff, 19, "%Y-%m-%d %H:%M:%S", localtime(&p[i]->epoch_time));
+            strftime(buff, 256, "%c", localtime(&p[i]->epoch_time));
             printf("Alarm %d: %s\n", (i+1), buff);
         }
     }
@@ -67,8 +67,7 @@ void exit_program() {
     exit(0);
 }
 
-const int n = 100;
-// struct tm times[n];
+const int MAX_ALARMS = 5;
 
 time_t get_current_time() {
     time_t current_time;
@@ -76,9 +75,13 @@ time_t get_current_time() {
     return current_time;
 }
 
+void delete_from_array(int index_remove, int length) {
+
+}
+
 void alarm_system() {
-    struct AlarmStruct * alarms[5];
-    for(int i=0; i < 5; i++){
+    struct AlarmStruct * alarms[MAX_ALARMS];
+    for(int i=0; i < MAX_ALARMS; i++){
         alarms[i] = malloc(sizeof(struct AlarmStruct));
         alarms[i]->epoch_time = 0;
         alarms[i]->childPID = 0;
@@ -100,11 +103,16 @@ void alarm_system() {
         switch (choice)
         {
         case 's':
-            schedule((*p)[alarm_index]);
-            alarm_index = alarm_index + 1;
+            if(alarm_index < MAX_ALARMS){
+                schedule((*p)[alarm_index]);
+                alarm_index = alarm_index + 1;
+            }
+            else {
+                printf("You cannot schedule more than %d alarms simultaneously. Please cancel an alarm before setting a new one\n", MAX_ALARMS);
+            }
             break;
         case 'l':
-            list((*p), 5);
+            list((*p), MAX_ALARMS);
             break;
         case 'c':
             cancel();
