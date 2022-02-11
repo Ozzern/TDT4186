@@ -3,6 +3,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include "alarm_clock.h"
+#include <unistd.h>
 
 struct AlarmStruct{
     time_t epoch_time;
@@ -41,8 +42,16 @@ time_t schedule(struct AlarmStruct *p) {
     time_t current_time = get_current_time();
     double time_diff = difftime(rawtime, current_time);
     printf("Scheduling alarm in %i seconds\n", (int) time_diff);
+    p->childPID = fork();
+    if(p->childPID == 0){
+        sleep(time_diff);
+        printf("RING!");
+        exit(0);
+    }
     p->epoch_time = rawtime;
-    p->childPID = 1;
+    
+    
+
 }
 
 // Function to display a list
