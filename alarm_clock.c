@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "alarm_clock.h"
 #include <unistd.h>
+#include <signal.h>
 
 struct AlarmStruct{
     time_t epoch_time;
@@ -43,15 +44,13 @@ time_t schedule(struct AlarmStruct *p) {
     double time_diff = difftime(rawtime, current_time);
     printf("Scheduling alarm in %i seconds\n", (int) time_diff);
     p->childPID = fork();
+    // printf("%i\n", p->childPID);
     if(p->childPID == 0){
         sleep(time_diff);
         printf("RING!");
         exit(0);
     }
     p->epoch_time = rawtime;
-    
-    
-
 }
 
 // Function to display a list
@@ -66,8 +65,20 @@ void list(struct AlarmStruct ** p, int n) {
 }
 
 // Function to cancel to choice
-void cancel() {
-    printf("Cancel\n");
+void cancel(struct AlarmStruct ** p, int n, int*alarm_index) {
+    printf("What alarm would you like to cancel? ");
+    int alarm_cancel = getchar() - 49;
+    empty_stdin();
+    if(alarm_cancel >= *alarm_index && alarm_cancel > 0) {
+        printf("You cannot cancel alarm %d, you only have %d alarms\n", (alarm_cancel + 1), *alarm_index);
+    }
+    else{
+        // printf("CHILD PID: %i\n", p[alarm_cancel]->childPID);
+        int val = kill(p[alarm_cancel]->childPID, 0);
+        // printf("%i", val);
+        *alarm_index = *alarm_index - 1;
+        delete_from_array(p, alarm_cancel, n);
+    }
 }
 
 // Function to exit the program
@@ -84,8 +95,13 @@ time_t get_current_time() {
     return current_time;
 }
 
-void delete_from_array(int index_remove, int length) {
-
+void delete_from_array(struct AlarmStruct ** p, int index_remove, int length) {
+    for(int i=index_remove; i < length - 1; i++){
+        p[i] = p[i+1];
+    }
+    // p[length]->epoch_time = 0;
+    // p[length]->childPID = 0;
+    printf("Successfully deleted alarm %d\n", (index_remove+1));
 }
 
 void alarm_system() {
@@ -124,7 +140,7 @@ void alarm_system() {
             list((*p), MAX_ALARMS);
             break;
         case 'c':
-            cancel();
+            cancel((*p), MAX_ALARMS, &alarm_index);
             break;
         case 'x':
             flag = 0;           // not necessary as exit_program() calls exit()
