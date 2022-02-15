@@ -186,11 +186,6 @@ void alarm_system() {
 // The main function
 int main() {
     alarm_system();
-//    struct tm new_time;
-//    char * string_time;
-//    string_time = malloc(sizeof(char)*256);
-//    strptime("01", "%d", &timeinfo);
-//    strftime(string_time, 256, "%d", &new_time)
     return 0;
 }
 //End of file
