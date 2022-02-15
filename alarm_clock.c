@@ -5,6 +5,8 @@
 #include "alarm_clock.h"
 #include <unistd.h>
 #include <signal.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 
 struct AlarmStruct{
     time_t epoch_time;
@@ -29,7 +31,7 @@ char get_choice() {
 }
 
 // Function to schedule an alarm
-time_t schedule(struct AlarmStruct *p) {
+void schedule(struct AlarmStruct *p) {
     printf("When would you like to schedule an alarm (yyyy-mm-dd hh:mm:ss)? ");
     char line[19];
     struct tm timeinfo;
@@ -42,49 +44,64 @@ time_t schedule(struct AlarmStruct *p) {
     rawtime = mktime(&timeinfo);
     time_t current_time = get_current_time();
     double time_diff = difftime(rawtime, current_time);
-    printf("Scheduling alarm in %i seconds\n", (int) time_diff);
-    p->childPID = fork();
-    // printf("%i\n", p->childPID);
-    if(p->childPID == 0){
-        sleep(time_diff);
-        printf("RING!");
-        exit(0);
+    if(time_diff < 0) {
+        printf("You cannot set an alarm for the past\n");
     }
-    p->epoch_time = rawtime;
+    else {
+        printf("Scheduling alarm in %i seconds\n", (int) time_diff);
+        p->childPID = fork();
+        // printf("%i\n", p->childPID);
+        if(p->childPID == 0){
+            sleep(time_diff);
+            printf("RING!");
+            exit(0);
+        }
+        p->epoch_time = rawtime;
+    }
 }
 
 // Function to display a list
 void list(struct AlarmStruct ** p, int n) {
     char buff[256];
+    int no_alarms = 1;
     for(int i=0; i < n; i++) {
         if(p[i]->epoch_time > 0){
             strftime(buff, 256, "%c", localtime(&p[i]->epoch_time));
             printf("Alarm %d: %s\n", (i+1), buff);
+            no_alarms = 0;
         }
+    }
+    if(no_alarms) {
+        printf("You don't have any alarms scheduled at the moment\n");
     }
 }
 
 // Function to cancel to choice
-void cancel(struct AlarmStruct ** p, int n, int*alarm_index) {
+int cancel(struct AlarmStruct ** p, int n, int*alarm_index) {
     printf("What alarm would you like to cancel? ");
     int alarm_cancel = getchar() - 49;
     empty_stdin();
-    if(alarm_cancel >= *alarm_index && alarm_cancel > 0) {
+    if(alarm_cancel >= *alarm_index) {
         printf("You cannot cancel alarm %d, you only have %d alarms\n", (alarm_cancel + 1), *alarm_index);
+        return 0;
     }
     else{
         // printf("CHILD PID: %i\n", p[alarm_cancel]->childPID);
-        int val = kill(p[alarm_cancel]->childPID, 0);
+        int val = kill(p[alarm_cancel]->childPID, SIGKILL);
+        if(val == 0) {
         // printf("%i", val);
-        *alarm_index = *alarm_index - 1;
-        delete_from_array(p, alarm_cancel, n);
+            *alarm_index = *alarm_index - 1;
+            delete_from_array(p, alarm_cancel, n);
+            return 1;
+        }
     }
+    return 0;
 }
 
 // Function to exit the program
 void exit_program() {
     printf("Exiting, goodbye!\n");
-    exit(0);
+    exit(EXIT_SUCCESS);
 }
 
 const int MAX_ALARMS = 5;
@@ -102,6 +119,18 @@ void delete_from_array(struct AlarmStruct ** p, int index_remove, int length) {
     // p[length]->epoch_time = 0;
     // p[length]->childPID = 0;
     printf("Successfully deleted alarm %d\n", (index_remove+1));
+}
+
+int kill_zombies(struct AlarmStruct ** alarms) {
+    int wstatus;
+    int end_PID;
+    end_PID = waitpid(-1, &wstatus, WNOHANG|WUNTRACED);
+    for(int i=0; i < MAX_ALARMS; i++){
+        if(alarms[i]->childPID > 0 && alarms[i]->childPID == end_PID) {
+            exit(EXIT_SUCCESS);
+        }
+    }
+    return wstatus;
 }
 
 void alarm_system() {
@@ -123,6 +152,7 @@ void alarm_system() {
     printf("Welcome to the alarm clock! It is currently %s", asctime(current_time_info));
     char choice;
     int flag = 1;
+    int cancelled;
     while(flag){
         choice = get_choice();
         switch (choice)
@@ -140,7 +170,7 @@ void alarm_system() {
             list((*p), MAX_ALARMS);
             break;
         case 'c':
-            cancel((*p), MAX_ALARMS, &alarm_index);
+            cancelled = cancel((*p), MAX_ALARMS, &alarm_index);
             break;
         case 'x':
             flag = 0;           // not necessary as exit_program() calls exit()
@@ -149,6 +179,7 @@ void alarm_system() {
         default:
             printf("Choice was not one of the four (s, l, c or x). Please try again!\n");
         }
+        kill_zombies(*p);       // kill zombies periodically after each run of the main loop
     }
 }
 
