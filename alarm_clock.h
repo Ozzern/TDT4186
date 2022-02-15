@@ -5,12 +5,13 @@ char get_choice();
 char get_time();
 time_t get_current_time();
 
-void schedule();
+int schedule();
 void list();
 int cancel();
 void exit_program();
 
 int kill_zombies();
+int get_alarm_index();
 
 void empty_stdin();
 

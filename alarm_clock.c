@@ -31,7 +31,7 @@ char get_choice() {
 }
 
 // Function to schedule an alarm
-void schedule(struct AlarmStruct *p) {
+int schedule(struct AlarmStruct * p, struct AlarmStruct ** list_p, int * alarm_index) {
     printf("When would you like to schedule an alarm (yyyy-mm-dd hh:mm:ss)? ");
     char line[19];
     struct tm timeinfo;
@@ -41,23 +41,34 @@ void schedule(struct AlarmStruct *p) {
     }
     empty_stdin();
     strptime(line, "%Y-%m-%d %H:%M:%S", &timeinfo);
+    timeinfo.tm_isdst = -1;
     rawtime = mktime(&timeinfo);
     time_t current_time = get_current_time();
     double time_diff = difftime(rawtime, current_time);
     if(time_diff < 0) {
         printf("You cannot set an alarm for the past\n");
+        return 0;
     }
     else {
         printf("Scheduling alarm in %i seconds\n", (int) time_diff);
         p->childPID = fork();
+        p->epoch_time = rawtime;
         // printf("%i\n", p->childPID);
         if(p->childPID == 0){
             sleep(time_diff);
             printf("RING!");
-            exit(0);
+            // execlp("mpg123", "mpg123", "-q", "alarm_sound.mp3", NULL);
+            int alarm_to_cancel = get_alarm_index(list_p, p);
+            printf("ALARM TO CANCEL: %i", alarm_to_cancel);
+            delete_from_array(list_p, alarm_to_cancel, MAX_ALARMS, alarm_index);
+            printf("%i", *alarm_index);
+            exit(EXIT_SUCCESS);
         }
-        p->epoch_time = rawtime;
+        else {
+            return 1;
+        }
     }
+    return 0;
 }
 
 // Function to display a list
@@ -77,7 +88,7 @@ void list(struct AlarmStruct ** p, int n) {
 }
 
 // Function to cancel to choice
-int cancel(struct AlarmStruct ** p, int n, int*alarm_index) {
+int cancel(struct AlarmStruct ** list_p, int n, int*alarm_index) {
     printf("What alarm would you like to cancel? ");
     int alarm_cancel = getchar() - 49;
     empty_stdin();
@@ -87,11 +98,10 @@ int cancel(struct AlarmStruct ** p, int n, int*alarm_index) {
     }
     else{
         // printf("CHILD PID: %i\n", p[alarm_cancel]->childPID);
-        int val = kill(p[alarm_cancel]->childPID, SIGKILL);
+        int val = kill(list_p[alarm_cancel]->childPID, SIGKILL);
         if(val == 0) {
         // printf("%i", val);
-            *alarm_index = *alarm_index - 1;
-            delete_from_array(p, alarm_cancel, n);
+            delete_from_array(list_p, alarm_cancel, n, alarm_index);
             return 1;
         }
     }
@@ -112,25 +122,32 @@ time_t get_current_time() {
     return current_time;
 }
 
-void delete_from_array(struct AlarmStruct ** p, int index_remove, int length) {
+void delete_from_array(struct AlarmStruct ** p, int index_remove, int length, int * alarm_index) {
+    p[length-1]->childPID = 0;
+    p[length-1]->epoch_time = 0;
+    printf("Alarm to be removed: %i", index_remove);
     for(int i=index_remove; i < length - 1; i++){
         p[i] = p[i+1];
     }
-    // p[length]->epoch_time = 0;
-    // p[length]->childPID = 0;
-    printf("Successfully deleted alarm %d\n", (index_remove+1));
+    *alarm_index = *alarm_index - 1;
+    printf("New alarm index: %i\n", (*alarm_index));
 }
 
 int kill_zombies(struct AlarmStruct ** alarms) {
     int wstatus;
     int end_PID;
     end_PID = waitpid(-1, &wstatus, WNOHANG|WUNTRACED);
-    for(int i=0; i < MAX_ALARMS; i++){
-        if(alarms[i]->childPID > 0 && alarms[i]->childPID == end_PID) {
-            exit(EXIT_SUCCESS);
+    return wstatus;
+}
+
+int get_alarm_index(struct AlarmStruct ** alarms, struct AlarmStruct *alarm) {
+    for(int i = 0; i < MAX_ALARMS; i++) {
+        if(alarms[i]->childPID == alarm->childPID && alarms[i]->epoch_time == alarm->epoch_time) {
+            return i;
         }
     }
-    return wstatus;
+    printf("No matching");
+    return -1;
 }
 
 void alarm_system() {
@@ -159,8 +176,10 @@ void alarm_system() {
         {
         case 's':
             if(alarm_index < MAX_ALARMS){
-                schedule((*p)[alarm_index]);
-                alarm_index = alarm_index + 1;
+                int scheduled = schedule((*p)[alarm_index], (*p), &alarm_index);
+                if(scheduled){
+                    alarm_index = alarm_index + 1;
+                }
             }
             else {
                 printf("You cannot schedule more than %d alarms simultaneously. Please cancel an alarm before setting a new one\n", MAX_ALARMS);
@@ -181,6 +200,10 @@ void alarm_system() {
         }
         kill_zombies(*p);       // kill zombies periodically after each run of the main loop
     }
+}
+
+void play_sound() {
+    // execlp("mpg123", "mpg123");
 }
 
 // The main function
