@@ -53,16 +53,15 @@ int schedule(struct AlarmStruct * p, struct AlarmStruct ** list_p, int * alarm_i
         printf("Scheduling alarm in %i seconds\n", (int) time_diff);
         p->childPID = fork();
         p->epoch_time = rawtime;
-        // printf("%i\n", p->childPID);
         if(p->childPID == 0){
             sleep(time_diff);
-            printf("RING!");
+            // EXEC was created by running gcc ring_alarm.c -o EXEC in the terminal
+            execlp("./EXEC", "./EXEC", NULL);
+
+            // SOLUTION FOR LINUX (replace mpg123 with afplay to run on Mac):
+            // 
             // execlp("mpg123", "mpg123", "-q", "alarm_sound.mp3", NULL);
-            // int alarm_to_cancel = get_alarm_index(list_p, p);
-            // printf("ALARM TO CANCEL: %i", alarm_to_cancel);
-            // delete_from_array(list_p, alarm_to_cancel, alarm_index);
-            // printf("%i", *alarm_index);
-            exit(EXIT_SUCCESS);
+            // 
         }
         else {
             return 1;
@@ -97,10 +96,8 @@ int cancel(struct AlarmStruct ** list_p, int*alarm_index) {
         return 0;
     }
     else{
-        // printf("CHILD PID: %i\n", p[alarm_cancel]->childPID);
         int val = kill(list_p[alarm_cancel]->childPID, SIGKILL);
         if(val == 0) {
-        // printf("%i", val);
             delete_from_array(list_p, alarm_cancel);
             *alarm_index = *alarm_index - 1;
             return 1;
@@ -132,11 +129,9 @@ time_t get_current_time() {
 void delete_from_array(struct AlarmStruct ** p, int index_remove) {
     p[MAX_ALARMS-1]->childPID = 0;
     p[MAX_ALARMS-1]->epoch_time = 0;
-    // printf("Alarm to be removed: %i", index_remove);
     for(int i=index_remove; i < MAX_ALARMS - 1; i++){
         p[i] = p[i+1];
     }
-    // printf("New alarm index: %i\n", (*alarm_index));
 }
 
 int kill_zombies(struct AlarmStruct ** alarms) {
@@ -201,7 +196,6 @@ void alarm_system() {
             if(kill_zombies(*p)) { // kill zombies periodically after each run of the main loop
                 alarm_index = alarm_index - 1;
             }
-            // printf("Alarm index: %i", alarm_index);
             list((*p), MAX_ALARMS);
             break;
         case 'c':
@@ -214,12 +208,7 @@ void alarm_system() {
         default:
             printf("Choice was not one of the four (s, l, c or x). Please try again!\n");
         }
-        // printf("IM HERE");
     }
-}
-
-void play_sound() {
-    // execlp("mpg123", "mpg123");
 }
 
 // The main function
