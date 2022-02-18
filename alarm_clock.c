@@ -101,7 +101,8 @@ int cancel(struct AlarmStruct ** list_p, int*alarm_index) {
         int val = kill(list_p[alarm_cancel]->childPID, SIGKILL);
         if(val == 0) {
         // printf("%i", val);
-            delete_from_array(list_p, alarm_cancel, alarm_index);
+            delete_from_array(list_p, alarm_cancel);
+            *alarm_index = *alarm_index - 1;
             return 1;
         }
     }
@@ -128,27 +129,31 @@ time_t get_current_time() {
     return current_time;
 }
 
-void delete_from_array(struct AlarmStruct ** p, int index_remove, int * alarm_index) {
+void delete_from_array(struct AlarmStruct ** p, int index_remove) {
     p[MAX_ALARMS-1]->childPID = 0;
     p[MAX_ALARMS-1]->epoch_time = 0;
-    printf("Alarm to be removed: %i", index_remove);
+    // printf("Alarm to be removed: %i", index_remove);
     for(int i=index_remove; i < MAX_ALARMS - 1; i++){
         p[i] = p[i+1];
     }
-    *alarm_index = *alarm_index - 1;
-    printf("New alarm index: %i\n", (*alarm_index));
+    // printf("New alarm index: %i\n", (*alarm_index));
 }
 
 int kill_zombies(struct AlarmStruct ** alarms) {
     int wstatus;
     int end_PID;
     end_PID = waitpid(-1, &wstatus, WNOHANG|WUNTRACED);
-    return wstatus;
+    if(WIFEXITED(wstatus)){
+        int alarm_to_cancel = get_alarm_index(alarms, end_PID);
+        delete_from_array(alarms, alarm_to_cancel);
+        return 1;
+    }
+    return 0;
 }
 
-int get_alarm_index(struct AlarmStruct ** alarms, struct AlarmStruct *alarm) {
+int get_alarm_index(struct AlarmStruct ** alarms, pid_t PID) {
     for(int i = 0; i < MAX_ALARMS; i++) {
-        if(alarms[i]->childPID == alarm->childPID && alarms[i]->epoch_time == alarm->epoch_time) {
+        if(alarms[i]->childPID == PID) {
             return i;
         }
     }
@@ -190,8 +195,13 @@ void alarm_system() {
             else {
                 printf("You cannot schedule more than %d alarms simultaneously. Please cancel an alarm before setting a new one\n", MAX_ALARMS);
             }
+            kill_zombies(*p);
             break;
         case 'l':
+            if(kill_zombies(*p)) { // kill zombies periodically after each run of the main loop
+                alarm_index = alarm_index - 1;
+            }
+            // printf("Alarm index: %i", alarm_index);
             list((*p), MAX_ALARMS);
             break;
         case 'c':
@@ -204,7 +214,7 @@ void alarm_system() {
         default:
             printf("Choice was not one of the four (s, l, c or x). Please try again!\n");
         }
-        kill_zombies(*p);       // kill zombies periodically after each run of the main loop
+        // printf("IM HERE");
     }
 }
 
