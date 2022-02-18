@@ -58,10 +58,10 @@ int schedule(struct AlarmStruct * p, struct AlarmStruct ** list_p, int * alarm_i
             sleep(time_diff);
             printf("RING!");
             // execlp("mpg123", "mpg123", "-q", "alarm_sound.mp3", NULL);
-            int alarm_to_cancel = get_alarm_index(list_p, p);
-            printf("ALARM TO CANCEL: %i", alarm_to_cancel);
-            delete_from_array(list_p, alarm_to_cancel, MAX_ALARMS, alarm_index);
-            printf("%i", *alarm_index);
+            // int alarm_to_cancel = get_alarm_index(list_p, p);
+            // printf("ALARM TO CANCEL: %i", alarm_to_cancel);
+            // delete_from_array(list_p, alarm_to_cancel, alarm_index);
+            // printf("%i", *alarm_index);
             exit(EXIT_SUCCESS);
         }
         else {
@@ -88,7 +88,7 @@ void list(struct AlarmStruct ** p, int n) {
 }
 
 // Function to cancel to choice
-int cancel(struct AlarmStruct ** list_p, int n, int*alarm_index) {
+int cancel(struct AlarmStruct ** list_p, int*alarm_index) {
     printf("What alarm would you like to cancel? ");
     int alarm_cancel = getchar() - 49;
     empty_stdin();
@@ -101,7 +101,7 @@ int cancel(struct AlarmStruct ** list_p, int n, int*alarm_index) {
         int val = kill(list_p[alarm_cancel]->childPID, SIGKILL);
         if(val == 0) {
         // printf("%i", val);
-            delete_from_array(list_p, alarm_cancel, n, alarm_index);
+            delete_from_array(list_p, alarm_cancel, alarm_index);
             return 1;
         }
     }
@@ -109,8 +109,14 @@ int cancel(struct AlarmStruct ** list_p, int n, int*alarm_index) {
 }
 
 // Function to exit the program
-void exit_program() {
+void exit_program(struct AlarmStruct ** list_p) {
     printf("Exiting, goodbye!\n");
+    for(int i = 0; i < MAX_ALARMS; i++){
+        if(list_p[i]->childPID != 0){
+            kill(list_p[i]->childPID, SIGKILL);
+        }
+    }
+    kill_zombies(list_p);
     exit(EXIT_SUCCESS);
 }
 
@@ -122,11 +128,11 @@ time_t get_current_time() {
     return current_time;
 }
 
-void delete_from_array(struct AlarmStruct ** p, int index_remove, int length, int * alarm_index) {
-    p[length-1]->childPID = 0;
-    p[length-1]->epoch_time = 0;
+void delete_from_array(struct AlarmStruct ** p, int index_remove, int * alarm_index) {
+    p[MAX_ALARMS-1]->childPID = 0;
+    p[MAX_ALARMS-1]->epoch_time = 0;
     printf("Alarm to be removed: %i", index_remove);
-    for(int i=index_remove; i < length - 1; i++){
+    for(int i=index_remove; i < MAX_ALARMS - 1; i++){
         p[i] = p[i+1];
     }
     *alarm_index = *alarm_index - 1;
@@ -189,11 +195,11 @@ void alarm_system() {
             list((*p), MAX_ALARMS);
             break;
         case 'c':
-            cancelled = cancel((*p), MAX_ALARMS, &alarm_index);
+            cancelled = cancel((*p), &alarm_index);
             break;
         case 'x':
             flag = 0;           // not necessary as exit_program() calls exit()
-            exit_program();
+            exit_program((*p));
             break;
         default:
             printf("Choice was not one of the four (s, l, c or x). Please try again!\n");
