@@ -1,6 +1,13 @@
 #define PORT 6789
 #define MAXREQ (4096 * 1024)
-#include <ws2tcpip.h>
+
+#include <sys/socket.h>
+#include <netinet/ip.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
+#include <string.h>
+#include <unistd.h>
 
 char buffer[MAXREQ], body[MAXREQ], msg[MAXREQ];
 void error(const char *msg)
@@ -40,14 +47,14 @@ int main()
             error("ERROR reading from socket");
         snprintf(body, sizeof(body),
                  "<html>\n<body>\n"
-                 "<h1>Hello web browser</h1>\nYour request was\n”
+                 "<h1>Hello web browser</h1>\nYour request was\n"
                  "<pre>%s</pre>\n"
                  "</body>\n</html>\n",
                  buffer);
         snprintf(msg, sizeof(msg),
-                 "HTTP/1.0 200 OK\n"
+                 "HTTP/1.1 200 OK\n"
                  "Content-Type: text/html\n"
-                 "Content-Length: %d\n\n%s",
+                 "Content-Length: %ld\n\n%s",
                  strlen(body), body);
         n = write(newsockfd, msg, strlen(msg));
         if (n < 0)
