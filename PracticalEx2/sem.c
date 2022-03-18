@@ -19,6 +19,7 @@ struct SEM *sem_init(int initVal)
     return semaphore;
 }
 
+// WAIT
 void P(struct SEM *sem)
 {
     pthread_mutex_lock(sem->mutex);
@@ -35,6 +36,7 @@ void P(struct SEM *sem)
     pthread_mutex_unlock(sem->mutex);
 }
 
+// SIGNAL
 void V(struct SEM *sem)
 {
     pthread_mutex_lock(sem->mutex);
