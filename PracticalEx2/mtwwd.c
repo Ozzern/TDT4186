@@ -17,13 +17,14 @@ void error(const char *msg)
     exit(1);
 }
 
-void set_path(char *raw_request)
+void set_path(char *raw_request, char * directory)
 {
     strcpy(path, raw_request);
     char *token;
     token = strtok(path, " ");
     token = strtok(NULL, " ");
-    sprintf(path,"%s%s",".",token);
+    sprintf(path,"%s%s%s",".", directory ,token);
+    printf("%s", path);
 }
 
 int read_file(char *filename)
@@ -56,7 +57,7 @@ int read_file(char *filename)
 int init_producer() {
     int sockfd;
     struct sockaddr_in6 serv_addr;
-    sockfd = socket(AF_INET6, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd < 0)
         error("ERROR opening socket");
     int enable = 1;
@@ -74,8 +75,19 @@ int init_producer() {
     return sockfd;
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+    if(argc != 5){
+        printf("Wrong number of arguments supplied");
+        return 0;
+    }
+    char* directory = argv[1];
+    int port;
+    sscanf(argv[2],"%d",&port);
+    int threads;
+    sscanf (argv[3],"%d",&threads);
+    int bufferslots;
+    sscanf (argv[4],"%d",&bufferslots);
     int sockfd = init_producer();
     int n;
     int newsockfd;
@@ -93,7 +105,8 @@ int main()
         n = read(newsockfd, buffer, sizeof(buffer) - 1);
         if (n < 0)
             error("ERROR reading from socket");
-        set_path(buffer);
+        printf("SKRRT");
+        set_path(buffer, directory);
         read_file(path);
         snprintf(body, sizeof(body),
                  "%s",
