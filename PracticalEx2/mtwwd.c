@@ -17,13 +17,13 @@ void error(const char *msg)
     exit(1);
 }
 
-void set_path(char *raw_request)
+void set_path(char *raw_request, char *directory)
 {
     strcpy(path, raw_request);
     char *token;
     token = strtok(path, " ");
     token = strtok(NULL, " ");
-    sprintf(path,"%s%s",".",token);
+    sprintf(path,"%s%s", directory, token);
 }
 
 int read_file(char *filename)
@@ -49,19 +49,19 @@ int read_file(char *filename)
         }
 
     }
-    strcpy(html_buffer, "<html><body><h1>404 Page Not Found</h1></body></html>");
+    strcpy(html_buffer, "<html><body><h1>404 Page Not Found</h1></body></html>\n");
     return 0;
 }
 
 int init_producer() {
     int sockfd;
     struct sockaddr_in6 serv_addr;
-    sockfd = socket(AF_INET6, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     if (sockfd < 0)
-        error("ERROR opening socket");
+        error("ERROR opening socket\n");
     int enable = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable)) == -1)
-        error("setsockopt(SO_REUSEADDR) failed");
+        error("setsockopt(SO_REUSEADDR) failed\n");
     bzero((char *)&serv_addr, sizeof(serv_addr));
     serv_addr.sin6_family = AF_INET6;
     serv_addr.sin6_addr = in6addr_any;
@@ -69,13 +69,25 @@ int init_producer() {
     if (bind(sockfd, (struct sockaddr *)&serv_addr,
              sizeof(serv_addr)) < 0)
     {
-        error("ERROR on binding");
+        error("ERROR on binding\n");
     }
     return sockfd;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    setvbuf (stdout, NULL, _IONBF, 0);
+    if(argc != 5){
+        printf("Wrong number of arguments supplied\n");
+        return 0;
+    }
+    char *directory = argv[1];
+    int port;
+    sscanf(argv[2],"%d",&port);
+    int threads;
+    sscanf (argv[3],"%d",&threads);
+    int bufferslots;
+    sscanf (argv[4],"%d",&bufferslots);
     int sockfd = init_producer();
     int n;
     int newsockfd;
@@ -88,12 +100,12 @@ int main()
         newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr,
                            &clilen);
         if (newsockfd < 0)
-            error("ERROR on accept");
+            error("ERROR on accept\n");
         bzero(buffer, sizeof(buffer));
         n = read(newsockfd, buffer, sizeof(buffer) - 1);
         if (n < 0)
-            error("ERROR reading from socket");
-        set_path(buffer);
+            error("ERROR reading from socket\n");
+        set_path(buffer, directory);
         read_file(path);
         snprintf(body, sizeof(body),
                  "%s",
@@ -105,7 +117,7 @@ int main()
                  strlen(body), body);        
         n = write(newsockfd, msg, strlen(msg));
         if (n < 0)
-            error("ERROR writing to socket");
+            error("ERROR writing to socket\n");
         close(newsockfd);
     }
 }
