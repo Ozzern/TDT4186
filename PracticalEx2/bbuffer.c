@@ -1,4 +1,7 @@
-#include <sem.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "sem.h"
 
 
 /*
@@ -14,7 +17,7 @@
  */
 
 typedef struct BNDBUF{
-    int* buffer;
+    int* buffer_ptr;
     unsigned int size;
     unsigned int head;
     unsigned int tail;
@@ -40,15 +43,18 @@ typedef struct BNDBUF{
  */
 
 BNDBUF *bb_init(unsigned int size) {
-    BNDBUF *ring_buffer = check_malloc(sizeof(BNDBUF));
+    BNDBUF *ring_buffer = malloc(sizeof(BNDBUF));
     ring_buffer->size = size;
     ring_buffer->head = 0;
     ring_buffer->tail = 0;
     ring_buffer->empty = sem_init(0);
     ring_buffer->busy = sem_init(1);
     ring_buffer->full = sem_init(size);
-    int* buffer[size];
-    ring_buffer->buffer = buffer;
+    int *buffer = malloc(sizeof(unsigned int) * size);
+    ring_buffer->buffer_ptr = buffer;
+    if(ring_buffer)
+        return ring_buffer;
+    return NULL;
 }
 
 /* Destroys a Bounded Buffer. 
@@ -61,12 +67,6 @@ BNDBUF *bb_init(unsigned int size) {
  */
 
 void bb_del(BNDBUF *bb) {
-    free(bb->buffer);
-    free(bb->empty);
-    free(bb->full);
-    free(bb->head);
-    free(bb->tail);
-    free(bb->size);
     free(bb);
 }
 
@@ -85,12 +85,18 @@ void bb_del(BNDBUF *bb) {
  * the int element
  */
 
-int  bb_get(BNDBUF *bb) {
+int bb_get(BNDBUF *bb) {
     P(bb->busy);
-    int element = bb->buffer[bb->tail];
-    bb->tail = (bb->tail + 1) % bb->size;
-    V(bb->full);
     P(bb->empty);
+    int element = bb->buffer_ptr[bb->tail];
+    // printf("GETTING ELEMENT FROM BUFFER: %i\n", element);
+    // printf("Old tail at %i\n", bb->tail);
+    // bb->tail = bb->tail + 1;
+    // if (bb->tail == bb->size)
+    //     bb->tail = 0;
+    bb->tail = (bb->tail + 1) % bb->size;
+    // printf("New tail at %i\n\n", bb->tail);
+    V(bb->full);
     V(bb->busy);
     return element;
 }
@@ -112,10 +118,12 @@ int  bb_get(BNDBUF *bb) {
  */
 
 void bb_add(BNDBUF *bb, int fd) {
-    P(bb->busy);
-    bb->buffer[bb->head] = fd;
-    bb->head = (bb->head + 1) % bb->size;
-    V(bb->empty);
     P(bb->full);
-    V(bb->busy);
+    // printf("SIZE %i\n", bb->size);
+    bb->buffer_ptr[bb->head] = fd;
+    // printf("ADDING ELEMENT TO BUFFER: %i\n", bb->buffer_ptr[bb->head]);
+    // printf("Old head at %i\n", bb->head);
+    bb->head = (bb->head + 1) % bb->size;
+    // printf("New head at %i\n\n", bb->head);
+    V(bb->empty);
 }
