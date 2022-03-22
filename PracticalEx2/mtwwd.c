@@ -88,6 +88,7 @@ void *execute_fd(void* vargp) {
     char * directory = w_i->www_path;
     while(1){
         int newsockfd = bb_get(bb);
+        // sleep(1);
         // printf("FILE DESCRIPTOR: %i\n", newsockfd);
         int n;
         bzero(buffer, sizeof(buffer));
@@ -127,9 +128,10 @@ int main(int argc, char* argv[])
     listen(sockfd, 1);
     BNDBUF *bb = bb_init(bufferslots);
     WORKER_INFO w_i = {directory, bb};
-    pthread_t tid;
+    pthread_t t_id[threads];
     for (int i = 0; i < threads; i++) {
-        pthread_create(&tid, NULL, execute_fd, (void *)&w_i);
+        pthread_create(&t_id[i], NULL, execute_fd, (void *)&w_i);
+        // printf("THREAD: %ld\n", t_id[i]);
     }
     int n;
     int newsockfd;
