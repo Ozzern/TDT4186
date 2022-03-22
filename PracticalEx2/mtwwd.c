@@ -32,7 +32,7 @@ int read_file(char *filename)
 {
     char * buffer = 0;
     long length;
-    printf("FILENAME: %s\n", filename);
+    // printf("FILENAME: %s\n", filename);
     FILE *f = fopen(filename, "rb");
 
     if (f)
