@@ -1,4 +1,3 @@
-#define PORT 6789
 #define MAXREQ (4096 * 1024)
 
 #include <sys/socket.h>
@@ -8,6 +7,9 @@
 #include <strings.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
+
+#include "bbuffer.h"
 
 char buffer[MAXREQ], body[MAXREQ], msg[MAXREQ], html_buffer[MAXREQ], path[MAXREQ];
 
@@ -30,6 +32,7 @@ int read_file(char *filename)
 {
     char * buffer = 0;
     long length;
+    // printf("FILENAME: %s\n", filename);
     FILE *f = fopen(filename, "rb");
 
     if (f)
@@ -53,7 +56,7 @@ int read_file(char *filename)
     return 0;
 }
 
-int init_producer() {
+int init_producer(int port) {
     int sockfd;
     struct sockaddr_in6 serv_addr;
     sockfd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
@@ -65,7 +68,7 @@ int init_producer() {
     bzero((char *)&serv_addr, sizeof(serv_addr));
     serv_addr.sin6_family = AF_INET6;
     serv_addr.sin6_addr = in6addr_any;
-    serv_addr.sin6_port = htons(PORT);
+    serv_addr.sin6_port = htons(port);
     if (bind(sockfd, (struct sockaddr *)&serv_addr,
              sizeof(serv_addr)) < 0)
     {
@@ -74,9 +77,41 @@ int init_producer() {
     return sockfd;
 }
 
+typedef struct WORKER_INFO {
+    char * www_path;
+    BNDBUF * bb;
+} WORKER_INFO;
+
+void *execute_fd(void* vargp) {
+    WORKER_INFO *w_i = (WORKER_INFO *) vargp;
+    BNDBUF *bb = w_i->bb;
+    char * directory = w_i->www_path;
+    while(1){
+        int newsockfd = bb_get(bb);
+        // printf("FILE DESCRIPTOR: %i\n", newsockfd);
+        int n;
+        bzero(buffer, sizeof(buffer));
+        n = read(newsockfd, buffer, sizeof(buffer) - 1);
+        if (n < 0)
+            error("ERROR reading from socket\n");
+        set_path(buffer, directory);
+        read_file(path);
+        snprintf(body, sizeof(body),
+                    "%s",
+                    html_buffer);
+        snprintf(msg, sizeof(msg),
+                    "%s",
+                    body);       
+        n = write(newsockfd, msg, strlen(msg));
+        if (n < 0)
+            error("ERROR writing to socket\n");
+        close(newsockfd);
+    }
+}
+
 int main(int argc, char* argv[])
 {
-    setvbuf (stdout, NULL, _IONBF, 0);
+    // setvbuf (stdout, NULL, _IONBF, 0);
     if(argc != 5){
         printf("Wrong number of arguments supplied\n");
         return 0;
@@ -88,12 +123,18 @@ int main(int argc, char* argv[])
     sscanf (argv[3],"%d",&threads);
     int bufferslots;
     sscanf (argv[4],"%d",&bufferslots);
-    int sockfd = init_producer();
+    int sockfd = init_producer(port);
+    listen(sockfd, 1);
+    BNDBUF *bb = bb_init(bufferslots);
+    WORKER_INFO w_i = {directory, bb};
+    pthread_t tid;
+    for (int i = 0; i < threads; i++) {
+        pthread_create(&tid, NULL, execute_fd, (void *)&w_i);
+    }
     int n;
     int newsockfd;
     socklen_t clilen;
     struct sockaddr_in cli_addr;
-    listen(sockfd, 5);
     while (1)
     {
         clilen = sizeof(cli_addr);
@@ -101,23 +142,6 @@ int main(int argc, char* argv[])
                            &clilen);
         if (newsockfd < 0)
             error("ERROR on accept\n");
-        bzero(buffer, sizeof(buffer));
-        n = read(newsockfd, buffer, sizeof(buffer) - 1);
-        if (n < 0)
-            error("ERROR reading from socket\n");
-        set_path(buffer, directory);
-        read_file(path);
-        snprintf(body, sizeof(body),
-                 "%s",
-                 html_buffer);
-        snprintf(msg, sizeof(msg),
-                 "HTTP/0.9 200 OK\n"
-                 "Content-Type: text/html\n"
-                 "Content-Length: %ld\n\n%s",
-                 strlen(body), body);        
-        n = write(newsockfd, msg, strlen(msg));
-        if (n < 0)
-            error("ERROR writing to socket\n");
-        close(newsockfd);
+        bb_add(bb, newsockfd);
     }
 }
