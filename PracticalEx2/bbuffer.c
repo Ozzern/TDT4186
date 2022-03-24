@@ -67,6 +67,7 @@ BNDBUF *bb_init(unsigned int size) {
  */
 
 void bb_del(BNDBUF *bb) {
+    free(bb->buffer_ptr);
     free(bb);
 }
 
@@ -86,8 +87,8 @@ void bb_del(BNDBUF *bb) {
  */
 
 int bb_get(BNDBUF *bb) {
-    P(bb->busy);
     P(bb->empty);
+    P(bb->busy);
     int element = bb->buffer_ptr[bb->tail];
     // printf("GETTING ELEMENT FROM BUFFER: %i\n", element);
     // printf("Old tail at %i\n", bb->tail);
@@ -96,8 +97,8 @@ int bb_get(BNDBUF *bb) {
     //     bb->tail = 0;
     bb->tail = (bb->tail + 1) % bb->size;
     // printf("New tail at %i\n\n", bb->tail);
-    V(bb->full);
     V(bb->busy);
+    V(bb->full);
     return element;
 }
 
@@ -119,11 +120,13 @@ int bb_get(BNDBUF *bb) {
 
 void bb_add(BNDBUF *bb, int fd) {
     P(bb->full);
+    P(bb->busy);
     // printf("SIZE %i\n", bb->size);
     bb->buffer_ptr[bb->head] = fd;
     // printf("ADDING ELEMENT TO BUFFER: %i\n", bb->buffer_ptr[bb->head]);
     // printf("Old head at %i\n", bb->head);
     bb->head = (bb->head + 1) % bb->size;
     // printf("New head at %i\n\n", bb->head);
+    V(bb->busy);
     V(bb->empty);
 }
