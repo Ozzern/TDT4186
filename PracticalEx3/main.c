@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 
 int print_working_dir()
 {
@@ -25,13 +26,12 @@ char **parse_input(char str[])
     char *token = strtok(str, delimiters);
 
     int init_size = strlen(str);
-    char *strings[init_size];
-    char **result = strings;
+    // char *strings[init_size];
+    char **result = malloc(init_size);
     int i = 0;
     while (token != NULL)
     {
         result[i] = token;
-        printf("%s\n", token);
         i++;
         token = strtok(NULL, delimiters);
     }
@@ -40,8 +40,34 @@ char **parse_input(char str[])
     return result;
 }
 
+// tror vi må gjøre dette før vi parser inputen, men når jeg prøvde å teste det så fikk jeg segmentation fault
+char *trim_trailing_whitespace(char *str)
+{
+    int index, i;
+
+    /* Set default index */
+    index = -1;
+
+    /* Find last index of non-white space character */
+    i = 0;
+    while (str[i] != '\0')
+    {
+        if (str[i] != ' ' && str[i] != '\t' && str[i] != '\n')
+        {
+            index = i;
+        }
+
+        i++;
+    }
+
+    /* Mark next character to last non-white space character as NULL */
+    str[index + 1] = '\0';
+    return str;
+}
+
 int main()
 {
+
     int running = 1;
     char *user_input;
     long unsigned int user_input_size = 1024;
@@ -57,12 +83,35 @@ int main()
         }
         else
         {
-            printf("%s", user_input);
             // TODO:  parse user input .fork here, execute command in child process (check PID) using exec(3) or maybe execvp
             // parsing
             char **parsed_input = parse_input(user_input);
-            
+
+            // fork to create a child that can execute the command
+            pid_t child_PID = fork();
+            if (child_PID < 0)
+            {
+                puts("ERROR when forking!");
+            }
+            else if (child_PID == 0)
+            {
+                // in child
+                puts("in child");
+
+                if (execvp(parsed_input[0], parsed_input) == -1)
+                {
+                    puts("ERROR while using execvp");
+                }
+            }
+            else
+            {
+                // in parent
+                pid_t wpid = waitpid(child_PID, NULL, 0);
+                printf(" Child procces with PID: %d finished \n", wpid);
+            }
         }
+        free(user_input);
+        //  må kanksje free det som ble malloca inni parse_input også
     }
     return 0;
 }
