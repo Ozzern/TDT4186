@@ -20,9 +20,14 @@ int print_working_dir()
     return 0;
 }
 
-char **parse_input(char str[])
+char **parse_input(char* orig_str)
 {
     char delimiters[] = " \t";
+    // makes copy of str so original is not altered
+    //char* str = malloc(strlen(orig_str) + 1);
+    //strcpy(str, orig_str);
+    char *str;
+    str = strdup(orig_str);
     char *token = strtok(str, delimiters);
 
     int init_size = strlen(str);
@@ -36,7 +41,6 @@ char **parse_input(char str[])
         token = strtok(NULL, delimiters);
     }
     result[i] = NULL;
-
     return result;
 }
 
@@ -70,7 +74,7 @@ int main()
 
     int running = 1;
     char *user_input;
-    long unsigned int user_input_size = 1024;
+    long unsigned int user_input_size = 4096;
     int bytes_read;
     user_input = (char *)malloc(user_input_size);
     while (running)
@@ -85,33 +89,46 @@ int main()
         {
             // TODO:  parse user input .fork here, execute command in child process (check PID) using exec(3) or maybe execvp
             // parsing
+
+            // removes trailing newlines
+            user_input[strcspn(user_input, "\r\n")] = 0;
             char **parsed_input = parse_input(user_input);
+            printf("%s", parsed_input[0]);
 
-            int status = 0;
-            // fork to create a child that can execute the command
-            pid_t child_PID = fork();
-            if (child_PID < 0)
-            {
-                puts("ERROR when forking!");
-            }
-            else if (child_PID == 0)
-            {
-                // in child
-                puts("in child");
-                status = execvp(parsed_input[0], parsed_input);
-
-                if (status == -1)
+            // compares first word in input with "cd". Returns 0 if they're equal
+            if(strcmp(parsed_input[0], "cd")) {
+                int status = 0;
+                // fork to create a child that can execute the command
+                pid_t child_PID = fork();
+                if (child_PID < 0)
                 {
-                    puts("ERROR while using execvp");
+                    puts("ERROR when forking!");
                 }
+                else if (child_PID == 0)
+                {
+                    // in child
+                    status = execvp(parsed_input[0], parsed_input);
 
-                _exit(status);
+                    if (status == -1)
+                    {
+                        puts("ERROR while using execvp");
+                    }
+
+                    _exit(status);
+                }
+                else
+                {
+                    // in parent
+                    pid_t wpid = waitpid(child_PID, &status, 0);
+                    printf("Exit status [%s] = %d\n", user_input, status);
+                    // printf(" Child procces with PID: %d finished with status: %d  \n", wpid, status);
+                }
             }
-            else
-            {
-                // in parent
-                pid_t wpid = waitpid(child_PID, &status, 0);
-                printf(" Child procces with PID: %d finished with status: %d  \n", wpid, status);
+            // here we cd to another directory
+            else {
+                char * path = parsed_input[1];
+                printf("%s", path);
+                chdir(path);
             }
         }
         free(user_input);
