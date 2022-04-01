@@ -28,6 +28,7 @@ int main(){
         }
         else {
             printf("%s", user_input);
+            // TODO: fork here, execute command in child process (check PID) using exec(3)
         }
 
     }
