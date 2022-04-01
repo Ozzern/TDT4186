@@ -87,6 +87,7 @@ int main()
             // parsing
             char **parsed_input = parse_input(user_input);
 
+            int status = 0;
             // fork to create a child that can execute the command
             pid_t child_PID = fork();
             if (child_PID < 0)
@@ -97,17 +98,20 @@ int main()
             {
                 // in child
                 puts("in child");
+                status = execvp(parsed_input[0], parsed_input);
 
-                if (execvp(parsed_input[0], parsed_input) == -1)
+                if (status == -1)
                 {
                     puts("ERROR while using execvp");
                 }
+
+                _exit(status);
             }
             else
             {
                 // in parent
-                pid_t wpid = waitpid(child_PID, NULL, 0);
-                printf(" Child procces with PID: %d finished \n", wpid);
+                pid_t wpid = waitpid(child_PID, &status, 0);
+                printf(" Child procces with PID: %d finished with status: %d  \n", wpid, status);
             }
         }
         free(user_input);
