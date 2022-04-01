@@ -24,8 +24,6 @@ char **parse_input(char* orig_str)
 {
     char delimiters[] = " \t";
     // makes copy of str so original is not altered
-    //char* str = malloc(strlen(orig_str) + 1);
-    //strcpy(str, orig_str);
     char *str;
     str = strdup(orig_str);
     char *token = strtok(str, delimiters);
@@ -127,11 +125,11 @@ int main()
             // here we cd to another directory
             else {
                 char * path = parsed_input[1];
-                printf("%s", path);
-                chdir(path);
+                int cd_error;
+                cd_error = chdir(path);
             }
         }
-        free(user_input);
+        // free(user_input);
         //  må kanksje free det som ble malloca inni parse_input også
     }
     return 0;
