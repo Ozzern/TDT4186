@@ -20,7 +20,7 @@ int print_working_dir()
     return 0;
 }
 
-char **parse_input(char* orig_str)
+char **parse_input(char* orig_str, int* input_size)
 {
     char delimiters[] = " \t";
     // makes copy of str so original is not altered
@@ -39,6 +39,7 @@ char **parse_input(char* orig_str)
         token = strtok(NULL, delimiters);
     }
     result[i] = NULL;
+    *input_size = i;
     return result;
 }
 
@@ -67,9 +68,24 @@ char *trim_trailing_whitespace(char *str)
     return str;
 }
 
+void check_if_IO(char** parsed_input, int input_size) {
+    for (int idx=0; idx<input_size; ++idx) {
+        char* str = parsed_input[idx];
+        if (!strcmp(str, "<")){
+            // Read from file here
+        }
+        else if (!strcmp(str, ">")){
+            // Write to file here
+        }
+        else {
+            // Ignore
+        }
+        printf("%s\n", str);
+    }
+}
+
 int main()
 {
-
     int running = 1;
     char *user_input;
     long unsigned int user_input_size = 4096;
@@ -81,7 +97,7 @@ int main()
         bytes_read = getline(&user_input, &user_input_size, stdin);
         if (bytes_read == -1)
         {
-            printf("Error when reading input");
+            printf("Error when reading input\n");
         }
         else
         {
@@ -89,9 +105,10 @@ int main()
             // parsing
 
             // removes trailing newlines
+            int* parsed_input_length;
             user_input[strcspn(user_input, "\r\n")] = 0;
-            char **parsed_input = parse_input(user_input);
-            printf("%s", parsed_input[0]);
+            char **parsed_input = parse_input(user_input, parsed_input_length);
+            check_if_IO(parsed_input, *parsed_input_length);
 
             // compares first word in input with "cd". Returns 0 if they're equal
             if(strcmp(parsed_input[0], "cd")) {
@@ -100,7 +117,7 @@ int main()
                 pid_t child_PID = fork();
                 if (child_PID < 0)
                 {
-                    puts("ERROR when forking!");
+                    puts("ERROR when forking!\n");
                 }
                 else if (child_PID == 0)
                 {
