@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 int print_working_dir()
 {
@@ -20,7 +23,7 @@ int print_working_dir()
     return 0;
 }
 
-char **parse_input(char *orig_str)
+char **parse_input(char *orig_str, int *input_size)
 {
     char delimiters[] = " \t";
     // makes copy of str so original is not altered
@@ -39,6 +42,7 @@ char **parse_input(char *orig_str)
         token = strtok(NULL, delimiters);
     }
     result[i] = NULL;
+    *input_size = i;
     return result;
 }
 
@@ -114,10 +118,54 @@ char *trim_trailing_whitespace(char *str)
 //         puts("Error while opening file to read! \n");
 //     }
 // }
+char **check_if_IO(char **parsed_input, int input_size)
+{
+    char **cleaned_parsed_input;
+    cleaned_parsed_input = malloc(input_size * sizeof(char *));
+    int k = 0;
+    printf("Checking for I/O redirections\n");
+    for (int idx = 0; idx < input_size; ++idx)
+    {
+        char *str = parsed_input[idx];
+        if (!strcmp(str, "<"))
+        {
+            printf("Read found\n");
+            // Read from file here
+            // Use Dup2() to set fd of next element as input
+            if (idx + 1 < input_size)
+            {
+                printf("Redirecting to %s\n", parsed_input[idx + 1]);
+                int fd = open(parsed_input[idx + 1], O_RDONLY);
+                dup2(fd, STDIN_FILENO);
+                ++idx;
+            }
+        }
+        else if (!strcmp(str, ">"))
+        {
+            printf("Write found\n");
+            // Write to file here
+            // Use Dup2() to set fd of next element as output
+            if (idx + 1 < input_size)
+            {
+                printf("Redirecting to %s\n", parsed_input[idx + 1]);
+                int fd = open(parsed_input[idx + 1], O_RDONLY);
+                dup2(fd, STDOUT_FILENO);
+                ++idx;
+            }
+        }
+        else
+        {
+            cleaned_parsed_input[k] = malloc(strlen(str));
+            strcpy(cleaned_parsed_input[k], str);
+            ++k;
+        }
+        // printf("%s\n", str);
+    }
+    return cleaned_parsed_input;
+}
 
 int main()
 {
-
     int running = 1;
     char *user_input;
     long unsigned int user_input_size = 4096;
@@ -129,18 +177,18 @@ int main()
         bytes_read = getline(&user_input, &user_input_size, stdin);
         if (bytes_read == -1)
         {
-            printf("Error when reading input");
+            printf("Error when reading input\n");
         }
         else
         {
-            // TODO:  parse user input .fork here, execute command in child process (check PID) using exec(3) or maybe execvp
+            // TODO:  parse user input. Fork here, execute command in child process (check PID) using exec(3) or maybe execvp
             // parsing
 
             // removes trailing newlines
+            int *parsed_input_length;
             user_input[strcspn(user_input, "\r\n")] = 0;
-            char **parsed_input = parse_input(user_input);
-            printf("%s", parsed_input[0]);
-
+            char **parsed_input = parse_input(user_input, parsed_input_length);
+            parsed_input = check_if_IO(parsed_input, *parsed_input_length);
             // compares first word in input with "cd". Returns 0 if they're equal
             if (strcmp(parsed_input[0], "cd"))
             {
@@ -149,7 +197,7 @@ int main()
                 pid_t child_PID = fork();
                 if (child_PID < 0)
                 {
-                    puts("ERROR when forking!");
+                    puts("ERROR when forking!\n");
                 }
                 else if (child_PID == 0)
                 {
