@@ -20,7 +20,7 @@ int print_working_dir()
     return 0;
 }
 
-char **parse_input(char* orig_str)
+char **parse_input(char *orig_str)
 {
     char delimiters[] = " \t";
     // makes copy of str so original is not altered
@@ -67,6 +67,54 @@ char *trim_trailing_whitespace(char *str)
     return str;
 }
 
+// char *read_file(char *filename)
+// {
+//     char *buffer = 0;
+//     long length;
+//     FILE *f = fopen(filename, "rb");
+
+//     if (f)
+//     {
+//         fseek(f, 0, SEEK_END);
+//         length = ftell(f);
+//         fseek(f, 0, SEEK_SET);
+//         buffer = malloc(length);
+//         if (buffer)
+//         {
+//             fread(buffer, 1, length, f);
+//         }
+//         fclose(f);
+//     }
+
+//     return buffer;
+// }
+
+// int write_to_file(char *filename, char *content) //not quite working, only wirtes the first character og content
+// {
+//     FILE *f = fopen(filename, "wb");
+//     size_t length = sizeof(*content);
+//     size_t num_of_bytes;
+
+//     if (f)
+//     {
+//         num_of_bytes = fwrite(content, 1, length, f);
+//         fclose(f);
+//         if (num_of_bytes != length)
+//         {
+//             printf("Error while writing from file: %s \n", filename);
+//             return -1;
+//         }
+//         else
+//         {
+//             return 1;
+//         }
+//     }
+//     else
+//     {
+//         puts("Error while opening file to read! \n");
+//     }
+// }
+
 int main()
 {
 
@@ -94,7 +142,8 @@ int main()
             printf("%s", parsed_input[0]);
 
             // compares first word in input with "cd". Returns 0 if they're equal
-            if(strcmp(parsed_input[0], "cd")) {
+            if (strcmp(parsed_input[0], "cd"))
+            {
                 int status = 0;
                 // fork to create a child that can execute the command
                 pid_t child_PID = fork();
@@ -123,8 +172,9 @@ int main()
                 }
             }
             // here we cd to another directory
-            else {
-                char * path = parsed_input[1];
+            else
+            {
+                char *path = parsed_input[1];
                 int cd_error;
                 cd_error = chdir(path);
             }
