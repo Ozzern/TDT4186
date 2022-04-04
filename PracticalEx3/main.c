@@ -118,7 +118,10 @@ char *trim_trailing_whitespace(char *str)
 //         puts("Error while opening file to read! \n");
 //     }
 // }
+
+// maybe this should return 0 or 1 based on if it found any < or >, then separate funcion can do the removing
 char **check_if_IO(char **parsed_input, int input_size)
+
 {
     char **cleaned_parsed_input;
     cleaned_parsed_input = malloc(input_size * sizeof(char *));
@@ -163,9 +166,52 @@ char **check_if_IO(char **parsed_input, int input_size)
     }
     return cleaned_parsed_input;
 }
+// todo er å fjerne < > og fila som kommer etter fra det som blir sent
+// dette står for remove redirection tokens, dvs <, > og fila som kommer etter
+//Funker ikke fordi memeory allocation er feil, må nok malloce per string
+char remove_rd_tokens(char **array_of_tokens)
+{
+    int length = sizeof(array_of_tokens) / sizeof(array_of_tokens[0]);
+    char **result = malloc(length);
+    int i;
+    int count;
+
+    for (i = 0; i < length - 1; i++)
+    {
+        char *str = array_of_tokens[i];
+        if (strcmp(str, ">") && strcmp(str, "<"))
+        {
+            count++;
+            result[i] = str;
+            
+        }
+        else
+        {
+            // dont add to result and skip next one as well
+            i++;
+        }
+    }
+    printf("%s\n", result[0]);
+    return result;
+}
 
 int main()
 {
+    // bæsj testing som ikke funker
+    // char *input[5] = {"hallo", "bajs", "<", "nice", "ok"};
+    // char **output = remove_rd_tokens(input);
+
+    // printf("I main:  %s \n", input[1]);
+    // for (int i = 0; i < 5; i++)
+    // {
+    //     printf("[%2d]: %s\n", i + 1, input[i]);
+    // }
+
+    // for (int j = 0; j < 3; j++)
+    // {
+    //     printf("[%2d]: %s\n", j + 1, output[j]);
+    // }
+
     int running = 1;
     char *user_input;
     long unsigned int user_input_size = 4096;
