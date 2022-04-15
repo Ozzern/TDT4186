@@ -8,6 +8,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+void print_image(FILE *fptr)
+{
+    char read_string[128];
+
+    while (fgets(read_string, sizeof(read_string), fptr) != NULL)
+        printf("%s", read_string);
+}
+
 int print_working_dir()
 {
     char cwd[PATH_MAX];
@@ -23,7 +31,7 @@ int print_working_dir()
     return 0;
 }
 
-char **parse_input(char *orig_str, int* input_size)
+char **parse_input(char *orig_str, int *input_size)
 {
     char delimiters[] = " \t";
     // makes copy of str so original is not altered
@@ -120,7 +128,7 @@ char *trim_trailing_whitespace(char *str)
 // }
 
 // maybe this should return 0 or 1 based on if it found any < or >, then separate funcion can do the removing
-void check_if_IO(char **parsed_input, int input_size, const char ** cleaned_parsed_input)
+void check_if_IO(char **parsed_input, int input_size, const char **cleaned_parsed_input)
 
 {
     int k = 0;
@@ -156,8 +164,8 @@ void check_if_IO(char **parsed_input, int input_size, const char ** cleaned_pars
         }
         else
         {
-            //cleaned_parsed_input[k] = malloc(strlen(str));
-            //strcpy(cleaned_parsed_input[k], str);
+            // cleaned_parsed_input[k] = malloc(strlen(str));
+            // strcpy(cleaned_parsed_input[k], str);
             cleaned_parsed_input[k] = str;
             ++k;
         }
@@ -165,10 +173,11 @@ void check_if_IO(char **parsed_input, int input_size, const char ** cleaned_pars
     }
 }
 
-// todo er å fjerne < > og fila som kommer etter fra det som blir sent
-// dette står for remove redirection tokens, dvs <, > og fila som kommer etter
-//Funker ikke fordi memeory allocation er feil, må nok malloce per string
-char** remove_rd_tokens(char **array_of_tokens)
+// SKAL NOK FJERNE DENNE
+//  todo er å fjerne < > og fila som kommer etter fra det som blir sent
+//  dette står for remove redirection tokens, dvs <, > og fila som kommer etter
+//  Funker ikke fordi memeory allocation er feil, må nok malloce per string
+char **remove_rd_tokens(char **array_of_tokens)
 {
     int length = sizeof(array_of_tokens) / sizeof(array_of_tokens[0]);
     char **result = malloc(length);
@@ -183,7 +192,6 @@ char** remove_rd_tokens(char **array_of_tokens)
         {
             count++;
             result[i] = str;
-            
         }
         else
         {
@@ -211,6 +219,20 @@ int main()
     // {
     //     printf("[%2d]: %s\n", j + 1, output[j]);
     // }
+
+
+
+    // char *filename = "image.txt";
+    // FILE *fptr = NULL;
+
+    // if ((fptr = fopen(filename, "r")) == NULL)
+    // {
+    //     fprintf(stderr, "error opening %s\n", filename);
+    //     return 1;
+    // }
+    // print_image(fptr);
+    // fclose(fptr);
+    // printf("\n");
 
     int running = 1;
     char *user_input;
