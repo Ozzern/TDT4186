@@ -23,7 +23,7 @@ int print_working_dir()
     return 0;
 }
 
-char **parse_input(char *orig_str, int *input_size)
+char **parse_input(char *orig_str, int* input_size)
 {
     char delimiters[] = " \t";
     // makes copy of str so original is not altered
@@ -120,11 +120,14 @@ char *trim_trailing_whitespace(char *str)
 // }
 
 // maybe this should return 0 or 1 based on if it found any < or >, then separate funcion can do the removing
-char **check_if_IO(char **parsed_input, int input_size)
+void check_if_IO(char **parsed_input, int input_size, const char ** cleaned_parsed_input)
 
 {
+<<<<<<< HEAD
     char **cleaned_parsed_input;
     cleaned_parsed_input = malloc(input_size * sizeof **cleaned_parsed_input);
+=======
+>>>>>>> fedb99f95d067ddccecb031597fd55c549a41dd9
     int k = 0;
     printf("Checking for I/O redirections\n");
     for (int idx = 0; idx < input_size; ++idx)
@@ -158,19 +161,29 @@ char **check_if_IO(char **parsed_input, int input_size)
         }
         else
         {
+<<<<<<< HEAD
 
             cleaned_parsed_input[k] = malloc(strlen(str));
             strcpy(cleaned_parsed_input[k], str);
+=======
+            //cleaned_parsed_input[k] = malloc(strlen(str));
+            //strcpy(cleaned_parsed_input[k], str);
+            cleaned_parsed_input[k] = str;
+>>>>>>> fedb99f95d067ddccecb031597fd55c549a41dd9
             ++k;
         }
         // printf("%s\n", str);
     }
-    return cleaned_parsed_input;
 }
+
 // todo er å fjerne < > og fila som kommer etter fra det som blir sent
 // dette står for remove redirection tokens, dvs <, > og fila som kommer etter
 //Funker ikke fordi memeory allocation er feil, må nok malloce per string
+<<<<<<< HEAD
 char **remove_rd_tokens(char **array_of_tokens)
+=======
+char** remove_rd_tokens(char **array_of_tokens)
+>>>>>>> fedb99f95d067ddccecb031597fd55c549a41dd9
 {
     int length = sizeof(array_of_tokens) / sizeof(array_of_tokens[0]);
     char **result = malloc(length);
@@ -180,6 +193,7 @@ char **remove_rd_tokens(char **array_of_tokens)
     for (i = 0; i < length - 1; i++)
     {
         char *str = array_of_tokens[i];
+        result[i] = malloc(strlen(str));
         if (strcmp(str, ">") && strcmp(str, "<"))
         {
             count++;
@@ -232,10 +246,13 @@ int main()
             // parsing
 
             // removes trailing newlines
-            int *parsed_input_length;
+            int *parsed_input_length = 0;
             user_input[strcspn(user_input, "\r\n")] = 0;
+            printf("%i", *parsed_input_length);
             char **parsed_input = parse_input(user_input, parsed_input_length);
-            parsed_input = check_if_IO(parsed_input, *parsed_input_length);
+            const char *stripped_parsed_input[*parsed_input_length];
+            check_if_IO(parsed_input, *parsed_input_length, stripped_parsed_input);
+            printf("%s", stripped_parsed_input[0]);
             // compares first word in input with "cd". Returns 0 if they're equal
             if (strcmp(parsed_input[0], "cd"))
             {
