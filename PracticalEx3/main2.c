@@ -73,6 +73,7 @@ int set_output(char* filename) {
     return dup2(fd, STDOUT_FILENO);
 }
 
+
 int main()
 {
     int running = 1;
@@ -133,6 +134,7 @@ int main()
 
                     _exit(status);
                 }
+
                 else
                 {
                     // in parent

@@ -123,11 +123,6 @@ char *trim_trailing_whitespace(char *str)
 void check_if_IO(char **parsed_input, int input_size, const char ** cleaned_parsed_input)
 
 {
-<<<<<<< HEAD
-    char **cleaned_parsed_input;
-    cleaned_parsed_input = malloc(input_size * sizeof **cleaned_parsed_input);
-=======
->>>>>>> fedb99f95d067ddccecb031597fd55c549a41dd9
     int k = 0;
     printf("Checking for I/O redirections\n");
     for (int idx = 0; idx < input_size; ++idx)
@@ -161,15 +156,9 @@ void check_if_IO(char **parsed_input, int input_size, const char ** cleaned_pars
         }
         else
         {
-<<<<<<< HEAD
-
-            cleaned_parsed_input[k] = malloc(strlen(str));
-            strcpy(cleaned_parsed_input[k], str);
-=======
             //cleaned_parsed_input[k] = malloc(strlen(str));
             //strcpy(cleaned_parsed_input[k], str);
             cleaned_parsed_input[k] = str;
->>>>>>> fedb99f95d067ddccecb031597fd55c549a41dd9
             ++k;
         }
         // printf("%s\n", str);
@@ -179,11 +168,7 @@ void check_if_IO(char **parsed_input, int input_size, const char ** cleaned_pars
 // todo er å fjerne < > og fila som kommer etter fra det som blir sent
 // dette står for remove redirection tokens, dvs <, > og fila som kommer etter
 //Funker ikke fordi memeory allocation er feil, må nok malloce per string
-<<<<<<< HEAD
-char **remove_rd_tokens(char **array_of_tokens)
-=======
 char** remove_rd_tokens(char **array_of_tokens)
->>>>>>> fedb99f95d067ddccecb031597fd55c549a41dd9
 {
     int length = sizeof(array_of_tokens) / sizeof(array_of_tokens[0]);
     char **result = malloc(length);
