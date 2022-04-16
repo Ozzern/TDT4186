@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "dll.h"
 
 int print_working_dir()
 {
@@ -73,6 +74,29 @@ int set_output(char* filename) {
     return dup2(fd, STDOUT_FILENO);
 }
 
+struct process_info {
+    struct list_head head;
+    pid_t pid;
+    char* command;
+};
+
+void print_procs(struct process_info *process_list, struct list_head head) {
+    struct process_info *elem = process_list;
+    elem = (struct process_info *) elem->head.next;
+    int wstatus;
+    int end_PID;
+    while(process_list != elem) {
+        end_PID = waitpid(elem->pid, &wstatus, WNOHANG|WUNTRACED);
+        if(end_PID){
+            printf("Exit status [%s] = %d\n", elem->command, wstatus);
+            // TODO: DELETE FROM LIST AFTER PROCESS HAS EXITED
+            // list_del((struct list_head *)elem);
+            // list_empty(&head);
+        }
+        elem = (struct process_info *) elem->head.next;
+    }
+}
+
 int main()
 {
     int running = 1;
@@ -82,18 +106,31 @@ int main()
     user_input = (char *)malloc(user_input_size);
     char* input_file = NULL;
     char* output_file = NULL;
+    struct list_head head;
+    list_init(&head);
+
     while (running)
     {
-        
+        // TODO: LOOP THROUGH LINKED LIST, COLLECT ZOMBIES HERE
+        print_procs((struct process_info *) &head, head);
+
         print_working_dir();
         bytes_read = getline(&user_input, &user_input_size, stdin);
         if (bytes_read == -1)
         {
             printf("Error when reading input\n");
         }
+        else if(bytes_read == 1){
+            printf("Input empty\n");
+        }
         else
         {
             user_input[strcspn(user_input, "\r\n")] = 0;
+            // TODO: REMOVE TRAILING WHITESPACES HERE
+            const char final_letter = user_input[strlen(user_input)-1];
+            if(final_letter == '&'){
+                user_input[strlen(user_input) - 1] = '\0';
+            }
             input_file = NULL;
             output_file = NULL;
             char **parsed_input = parse_input(user_input, &input_file, &output_file);
@@ -128,7 +165,7 @@ int main()
 
                     if (status == -1)
                     {
-                        puts("ERROR while using execvp");
+                        printf("ERROR while using execvp\n");
                     }
 
                     _exit(status);
@@ -136,8 +173,20 @@ int main()
                 else
                 {
                     // in parent
-                    pid_t wpid = waitpid(process_PID, &status, 0);
-                    printf("Exit status [%s] = %d\n", user_input, status);
+
+                    if(final_letter == '&'){
+                        // Add process to linked list
+                        struct process_info *new_process;
+                        new_process = malloc(sizeof(struct process_info));
+                        new_process->pid = process_PID;
+                        new_process->command = malloc(strlen(user_input));
+                        new_process->command = user_input;
+                        list_add(&(new_process->head), &head);
+                    }
+                    else {
+                        pid_t wpid = waitpid(process_PID, &status, 0);
+                        printf("Exit status [%s] = %d\n", user_input, status);
+                    }
                 }
             }
         }
