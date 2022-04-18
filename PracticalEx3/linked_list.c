@@ -22,7 +22,6 @@ void delete_by_pid(struct node ** head, pid_t pid){
 
     if (temp != NULL && temp->pid == pid){
         *head = temp->next;
-        printf("DELETED HEAD WITH PID: %d\n", temp->pid);
         free(temp);
         return;
     }
@@ -37,7 +36,6 @@ void delete_by_pid(struct node ** head, pid_t pid){
     }
 
     prev->next = temp->next;
-    printf("DELETED WITH PID: %d\n", temp->pid);
     free(temp);
 }
 
@@ -52,6 +50,7 @@ void print_list(struct node* node){
         printf("PID %d: %s\n", node->pid, node->command);
         node = node->next;
     }
+    puts("");
 }
 
 /*
