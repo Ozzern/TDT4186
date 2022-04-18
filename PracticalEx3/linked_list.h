@@ -1,11 +1,14 @@
+#include <unistd.h>
+#include <sys/types.h>
+
 struct node{
-    int data;
-    int key;
+    pid_t pid;
+    char* command;
     struct node *next;
 };
 
-void insertFirst(int key, int data);
+void push(struct node ** head, pid_t pid, char* command);
 
-int isEmpty();
+void delete_by_pid(struct node ** head, pid_t pid);
 
-int delete_from_list(int key);
+void print_list(struct node* node);

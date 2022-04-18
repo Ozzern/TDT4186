@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "dll.h"
+#include "linked_list.h"
 
 int print_working_dir()
 {
@@ -74,6 +74,7 @@ int set_output(char* filename) {
     return dup2(fd, STDOUT_FILENO);
 }
 
+/*
 struct process_info {
     struct list_head head;
     pid_t pid;
@@ -96,6 +97,22 @@ void print_procs(struct process_info *process_list, struct list_head head) {
         elem = (struct process_info *) elem->head.next;
     }
 }
+*/
+
+void print_processes_ending(struct node** head, struct node* node){
+    int wstatus;
+    int end_PID;
+    struct node* prev = malloc(sizeof(struct node*));
+    while (node != NULL) {
+        prev = node;
+        node = node->next;
+        end_PID = waitpid(prev->pid, &wstatus, WNOHANG|WUNTRACED);
+        if(WIFEXITED(wstatus)){
+            printf("Exit status [%s] = %d\n", prev->command, WEXITSTATUS(wstatus));
+            delete_by_pid(head, prev->pid);
+        }
+    }
+}
 
 int main()
 {
@@ -106,14 +123,13 @@ int main()
     user_input = (char *)malloc(user_input_size);
     char* input_file = NULL;
     char* output_file = NULL;
-    struct list_head head;
-    list_init(&head);
+    struct node* head = NULL;
 
     while (running)
     {
         // TODO: LOOP THROUGH LINKED LIST, COLLECT ZOMBIES HERE
-        print_procs((struct process_info *) &head, head);
-
+        // print_processes_ending(head);
+        print_processes_ending(&head, head);
         print_working_dir();
         bytes_read = getline(&user_input, &user_input_size, stdin);
         if (bytes_read == -1)
@@ -143,6 +159,11 @@ int main()
                 int cd_error;
                 cd_error = chdir(path);
             }
+
+            else if (!strcmp(parsed_input[0], "jobs"))
+            {
+                print_list(head);
+            }
             // here we dont cd
             else
             {
@@ -168,7 +189,6 @@ int main()
                     {
                         printf("ERROR while using execvp\n");
                     }
-
                     _exit(status);
                 }
 
@@ -178,12 +198,9 @@ int main()
 
                     if(final_letter == '&'){
                         // Add process to linked list
-                        struct process_info *new_process;
-                        new_process = malloc(sizeof(struct process_info));
-                        new_process->pid = process_PID;
-                        new_process->command = malloc(strlen(user_input));
-                        new_process->command = user_input;
-                        list_add(&(new_process->head), &head);
+                        char* temp_input = malloc(sizeof(user_input));
+                        strcpy(temp_input, user_input);
+                        push(&head, process_PID, temp_input);
                     }
                     else {
                         pid_t wpid = waitpid(process_PID, &status, 0);
