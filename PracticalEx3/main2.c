@@ -24,7 +24,7 @@ int print_working_dir()
     return 0;
 }
 
-char **parse_input(char *orig_str, char** input_file, char** output_file)
+char **parse_input(char *orig_str, char **input_file, char **output_file)
 {
     char delimiters[] = " \t";
     // makes copy of str so original is not altered
@@ -40,21 +40,26 @@ char **parse_input(char *orig_str, char** input_file, char** output_file)
     int next_is_write = 0;
     while (token != NULL)
     {
-        if(next_is_read){
+        if (next_is_read)
+        {
             next_is_read = 0;
             *input_file = token;
         }
-        else if(next_is_write){
+        else if (next_is_write)
+        {
             next_is_write = 0;
             *output_file = token;
         }
-        else if(!strcmp(token, "<")){
+        else if (!strcmp(token, "<"))
+        {
             next_is_read = 1;
         }
-        else if(!strcmp(token, ">")){
+        else if (!strcmp(token, ">"))
+        {
             next_is_write = 1;
         }
-        else{
+        else
+        {
             result[i] = token;
             i++;
         }
@@ -64,12 +69,14 @@ char **parse_input(char *orig_str, char** input_file, char** output_file)
     return result;
 }
 
-int set_input(char* filename) {
+int set_input(char *filename)
+{
     int fd = open(filename, O_RDONLY);
     return dup2(fd, STDIN_FILENO);
 }
 
-int set_output(char* filename) {
+int set_output(char *filename)
+{
     int fd = open(filename, O_RDWR | O_CREAT | O_APPEND, 0644); // CHMOD 644, everyone can open the file
     return dup2(fd, STDOUT_FILENO);
 }
@@ -99,15 +106,18 @@ void print_procs(struct process_info *process_list, struct list_head head) {
 }
 */
 
-void print_processes_ending(struct node** head, struct node* node){
+void print_processes_ending(struct node **head, struct node *node)
+{
     int wstatus;
     int end_PID;
-    struct node* prev = malloc(sizeof(struct node*));
-    while (node != NULL) {
+    struct node *prev = malloc(sizeof(struct node *));
+    while (node != NULL)
+    {
         prev = node;
         node = node->next;
-        end_PID = waitpid(prev->pid, &wstatus, WNOHANG|WUNTRACED);
-        if(WIFEXITED(wstatus)){
+        end_PID = waitpid(prev->pid, &wstatus, WNOHANG | WUNTRACED);
+        if (WIFEXITED(wstatus))
+        {
             printf("Exit status [%s] = %d\n", prev->command, WEXITSTATUS(wstatus));
             delete_by_pid(head, prev->pid);
         }
@@ -121,9 +131,9 @@ int main()
     long unsigned int user_input_size = 4096;
     int bytes_read;
     user_input = (char *)malloc(user_input_size);
-    char* input_file = NULL;
-    char* output_file = NULL;
-    struct node* head = NULL;
+    char *input_file = NULL;
+    char *output_file = NULL;
+    struct node *head = NULL;
 
     while (running)
     {
@@ -132,21 +142,23 @@ int main()
         print_processes_ending(&head, head);
         print_working_dir();
         bytes_read = getline(&user_input, &user_input_size, stdin);
-        if (bytes_read == -1)
+        if (bytes_read == -1) // ctrl-D must be pressed twice if it is not the first character of a line
         {
-            printf("Error when reading input\n");
+            printf("Terminating flush. Goodbye \n");
             running = 0;
         }
-        else if(bytes_read == 1){
+        else if (bytes_read == 1)
+        {
             printf("Input empty\n");
         }
         else
         {
             // REMOVE TRAILING WHITESPACES HERE
             user_input[strcspn(user_input, "\r\n")] = 0;
-            
-            const char final_letter = user_input[strlen(user_input)-1];
-            if(final_letter == '&'){
+
+            const char final_letter = user_input[strlen(user_input) - 1];
+            if (final_letter == '&')
+            {
                 user_input[strlen(user_input) - 1] = '\0';
             }
             input_file = NULL;
@@ -178,10 +190,12 @@ int main()
                 else if (process_PID == 0)
                 {
                     // in child
-                    if(input_file){
+                    if (input_file)
+                    {
                         set_input(input_file);
                     }
-                    if(output_file){
+                    if (output_file)
+                    {
                         set_output(output_file);
                     }
                     status = execvp(parsed_input[0], parsed_input);
@@ -197,13 +211,15 @@ int main()
                 {
                     // in parent
 
-                    if(final_letter == '&'){
+                    if (final_letter == '&')
+                    {
                         // Add process to linked list
-                        char* temp_input = malloc(sizeof(user_input));
+                        char *temp_input = malloc(sizeof(user_input));
                         strcpy(temp_input, user_input);
                         push(&head, process_PID, temp_input);
                     }
-                    else {
+                    else
+                    {
                         pid_t wpid = waitpid(process_PID, &status, 0);
                         printf("Exit status [%s] = %d\n", user_input, status);
                     }
