@@ -9,6 +9,15 @@
 #include <fcntl.h>
 #include "linked_list.h"
 
+// For printing the welcome message
+void print_image(FILE *fptr)
+{
+    char read_string[128];
+
+    while (fgets(read_string, sizeof(read_string), fptr) != NULL)
+        printf("%s", read_string);
+}
+
 int print_working_dir()
 {
     char cwd[PATH_MAX];
@@ -126,6 +135,18 @@ void print_processes_ending(struct node **head, struct node *node)
 
 int main()
 {
+    char *filename = "image.txt";
+    FILE *fptr = NULL;
+
+    if ((fptr = fopen(filename, "r")) == NULL)
+    {
+        fprintf(stderr, "error opening %s\n", filename);
+        return 1;
+    }
+    print_image(fptr);
+    fclose(fptr);
+    printf("\n");
+
     int running = 1;
     char *user_input;
     long unsigned int user_input_size = 4096;
