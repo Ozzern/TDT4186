@@ -135,6 +135,7 @@ int main()
         if (bytes_read == -1)
         {
             printf("Error when reading input\n");
+            running = 0;
         }
         else if(bytes_read == 1){
             printf("Input empty\n");

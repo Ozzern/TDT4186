@@ -224,6 +224,7 @@ int main()
         if (bytes_read == -1)
         {
             printf("Error when reading input\n");
+            break;
         }
         else
         {
@@ -276,8 +277,6 @@ int main()
                 cd_error = chdir(path);
             }
         }
-        // free(user_input);
-        //  må kanksje free det som ble malloca inni parse_input også
     }
     return 0;
 }
